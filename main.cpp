@@ -24,6 +24,48 @@ const char test = 'g';
 
 
 
+struct Lexem {
+	const enum t_ {
+		Op,
+		Lit,
+		Sep,
+		Kw,
+		Id
+	}type;
+	Lexem(t_ type) : type(type){};
+};
+
+
+struct Sep : Lexem {
+	const enum t_ {
+		Space,
+		Tab,
+		NewLine
+	} type;
+	Sep(t_ type) : type(type), Lexem(Lexem::Sep){};
+};
+
+struct Lit : Lexem {
+	const enum t_ {
+		Int,
+		Bool,
+		Char,
+		String,
+		Float,
+		Range
+	} type;
+	Lit(t_ type) : type(type),Lexem(Lexem::Lit) {};
+};
+
+
+struct Kw : Lexem {
+	const enum t_ {
+		For
+	} type;
+	Kw(t_ type) : type(type), Lexem(Lexem::Kw) {};
+};
+
+
 u8 classic(char c) {
 	switch (c)
 	{
@@ -210,6 +252,7 @@ u8 sse2(char c) {
 
 int main() {
 
+	
 	bench(classic, test);
 	bench(sse2, test);
 	//bench(swar, "swar");
