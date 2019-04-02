@@ -1,10 +1,20 @@
 #include <iostream>
-#include <Windows.h>
 #include <immintrin.h>
 #include <chrono>
 #include <string>
-#include <algorithm>
-#include <random>
+
+#define cpuid(info, x)    __cpuidex(info, x, 0)
+#define p(b) std::cout << #b << ": "<< std::boolalpha << b << "\n";
+
+
+
+
+
+
+
+
+
+
 
 
 typedef unsigned char u8;
@@ -22,48 +32,6 @@ void _bench(f fun, std::string name, char c) {
 const char test = 'g';
 
 
-
-
-struct Lexem {
-	const enum t_ {
-		Op,
-		Lit,
-		Sep,
-		Kw,
-		Id
-	}type;
-	Lexem(t_ type) : type(type){};
-};
-
-
-struct Sep : Lexem {
-	const enum t_ {
-		Space,
-		Tab,
-		NewLine
-	} type;
-	Sep(t_ type) : type(type), Lexem(Lexem::Sep){};
-};
-
-struct Lit : Lexem {
-	const enum t_ {
-		Int,
-		Bool,
-		Char,
-		String,
-		Float,
-		Range
-	} type;
-	Lit(t_ type) : type(type),Lexem(Lexem::Lit) {};
-};
-
-
-struct Kw : Lexem {
-	const enum t_ {
-		For
-	} type;
-	Kw(t_ type) : type(type), Lexem(Lexem::Kw) {};
-};
 
 
 u8 classic(char c) {
@@ -183,22 +151,6 @@ u8 classic_32(char c) {
 u8 __declspec(align(16)) cmpa[32] = { 0x76, 0x75, 0x74, 0x73, 0x72, 0x71, 0x70, 0x6f, 0x6e, 0x6d, 0x6c, 0x6b, 0x6a, 0x69, 0x68, 0x67, 0x66, 0x65, 0x64, 0x63, 0x62, 0x61, 0x39, 0x38, 0x37, 0x36, 0x35, 0x34, 0x33, 0x32, 0x31, 0x30 };
 
 
-/*
-__forceinline __m256i fill8(char c) {
-	return _mm256_setr_epi8(c, c, c, c,
-		c, c, c, c,
-
-		c, c, c, c,
-		c, c, c, c,
-		
-		c, c, c, c,
-		c, c, c, c,
-		
-		c, c, c, c,
-		c, c, c, c);
-}
-*/
-/*
 u8 avx(char c) {
 	return __lzcnt(_mm256_movemask_epi8(_mm256_cmpeq_epi8(
 		_mm256_loadu_si256((__m256i*)&cmpa),
@@ -215,29 +167,6 @@ u8 avx(char c) {
 		c, c, c, c)
 		)));
 }
-*/
-/*
-u8 avx(char c) {
-	//auto&a = _mm256_loadu_si256((const __m256i*)&cmpa);
-	//__m256i a = _mm256_loadu_si256((const __m256i*)&cmpa);
-	auto&b = _mm256_setr_epi8(c, c, c, c,
-
-		c, c, c, c,
-		c, c, c, c,
-
-		c, c, c, c,
-		c, c, c, c,
-
-		c, c, c, c,
-		c, c, c, c,
-		c,c,c,c);
-
-	auto& cmp = _mm256_cmpeq_epi8(a, b);
-	auto m =_mm256_movemask_epi8(cmp);
-	return __lzcnt(m);
-
-}*/
-
 
 u8 sse2(char c) {
 
@@ -250,13 +179,122 @@ u8 sse2(char c) {
 
 #define bench(f,c) _bench(f,#f,c)
 
+
+
+
+
 int main() {
 
-	
-	bench(classic, test);
-	bench(sse2, test);
-	//bench(swar, "swar");
+	//  Misc.
+	bool HW_MMX;
+	bool HW_x64;
+	bool HW_ABM;      // Advanced Bit Manipulation
+	bool HW_RDRAND;
+	bool HW_BMI1;
+	bool HW_BMI2;
+	bool HW_ADX;
+	bool HW_PREFETCHWT1;
 
+	//  SIMD: 128-bit
+	bool HW_SSE;
+	bool HW_SSE2;
+	bool HW_SSE3;
+	bool HW_SSSE3;
+	bool HW_SSE41;
+	bool HW_SSE42;
+	bool HW_SSE4a;
+	bool HW_AES;
+	bool HW_SHA;
+
+	//  SIMD: 256-bit
+	bool HW_AVX;
+	bool HW_XOP;
+	bool HW_FMA3;
+	bool HW_FMA4;
+	bool HW_AVX2;
+
+	//  SIMD: 512-bit
+	bool HW_AVX512F;    //  AVX512 Foundation
+	bool HW_AVX512CD;   //  AVX512 Conflict Detection
+	bool HW_AVX512PF;   //  AVX512 Prefetch
+	bool HW_AVX512ER;   //  AVX512 Exponential + Reciprocal
+	bool HW_AVX512VL;   //  AVX512 Vector Length Extensions
+	bool HW_AVX512BW;   //  AVX512 Byte + Word
+	bool HW_AVX512DQ;   //  AVX512 Doubleword + Quadword
+	bool HW_AVX512IFMA; //  AVX512 Integer 52-bit Fused Multiply-Add
+	bool HW_AVX512VBMI; //  AVX512 Vector Byte Manipulation Instructions
+
+	int info[4];
+	cpuid(info, 0);
+	int nIds = info[0];
+
+	cpuid(info, 0x80000000);
+	unsigned nExIds = info[0];
+
+	//  Detect Features
+	if (nIds >= 0x00000001){
+		cpuid(info, 0x00000001);
+		HW_MMX = (info[3] & ((int)1 << 23)) != 0;
+		HW_SSE = (info[3] & ((int)1 << 25)) != 0;
+		HW_SSE2 = (info[3] & ((int)1 << 26)) != 0;
+		HW_SSE3 = (info[2] & ((int)1 << 0)) != 0;
+
+		HW_SSSE3 = (info[2] & ((int)1 << 9)) != 0;
+		HW_SSE41 = (info[2] & ((int)1 << 19)) != 0;
+		HW_SSE42 = (info[2] & ((int)1 << 20)) != 0;
+		HW_AES = (info[2] & ((int)1 << 25)) != 0;
+
+		HW_AVX = (info[2] & ((int)1 << 28)) != 0;
+		HW_FMA3 = (info[2] & ((int)1 << 12)) != 0;
+
+		HW_RDRAND = (info[2] & ((int)1 << 30)) != 0;
+	}
+	if (nIds >= 0x00000007){
+		cpuid(info, 0x00000007);
+		HW_AVX2 = (info[1] & ((int)1 << 5)) != 0;
+
+		HW_BMI1 = (info[1] & ((int)1 << 3)) != 0;
+		HW_BMI2 = (info[1] & ((int)1 << 8)) != 0;
+		HW_ADX = (info[1] & ((int)1 << 19)) != 0;
+		HW_SHA = (info[1] & ((int)1 << 29)) != 0;
+		HW_PREFETCHWT1 = (info[2] & ((int)1 << 0)) != 0;
+
+		HW_AVX512F = (info[1] & ((int)1 << 16)) != 0;
+		HW_AVX512CD = (info[1] & ((int)1 << 28)) != 0;
+		HW_AVX512PF = (info[1] & ((int)1 << 26)) != 0;
+		HW_AVX512ER = (info[1] & ((int)1 << 27)) != 0;
+		HW_AVX512VL = (info[1] & ((int)1 << 31)) != 0;
+		HW_AVX512BW = (info[1] & ((int)1 << 30)) != 0;
+		HW_AVX512DQ = (info[1] & ((int)1 << 17)) != 0;
+		HW_AVX512IFMA = (info[1] & ((int)1 << 21)) != 0;
+		HW_AVX512VBMI = (info[2] & ((int)1 << 1)) != 0;
+	}
+	if (nExIds >= 0x80000001){
+		cpuid(info, 0x80000001);
+		HW_x64 = (info[3] & ((int)1 << 29)) != 0;
+		HW_ABM = (info[2] & ((int)1 << 5)) != 0;
+		HW_SSE4a = (info[2] & ((int)1 << 6)) != 0;
+		HW_FMA4 = (info[2] & ((int)1 << 16)) != 0;
+		HW_XOP = (info[2] & ((int)1 << 11)) != 0;
+	}
+
+
+	p(HW_SSE);
+	p(HW_SSE2);
+	p(HW_SSE3);
+	p(HW_SSSE3);
+	p(HW_x64);
+	p(HW_AES);
+	p(HW_AVX);
+	p(HW_AVX2);
+	p(HW_AVX512F);
+	std::cout << "\n\n";
+
+	char test = 'q';
+	bench(classic, test);
+	bench(classic_32, test);
+	bench(sse2, test);
+	bench(avx, test);
 
 	std::cin.get();
 	return 0;
