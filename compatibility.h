@@ -3,14 +3,15 @@
 #define __COMPATIBILITY_H__
 
 #ifdef __clang__ || __GNUC__
-#define INLINE static inline __attribute__((__always_inline__))
-#define ALIGN(_n,_decl) _decl __attribute__((aligned(_n)))
+#define INLINE inline __attribute__((__always_inline__))
+#define ALIGN(_n) __attribute__((aligned(_n)))
+#define clz(n) __builtin_clz(n)
 #endif
 #ifdef _MSVC_VER
-#define INLINE __forceinline
-#define ALIGN(_n,_decl) __declspec(align(_n)) _decl
+#define INLINE __forceinline inline
+#define ALIGN(_n) __declspec(align(_n))
+#define clz(n) __lzcnt(n)
 #endif
-
 #ifdef _WIN32
 #define cpuid(info, x)    __cpuidex(info, x, 0)
 #else
@@ -19,5 +20,10 @@ void cpuid(int info[4], int InfoType){
     __cpuid_count(InfoType, 0, info[0], info[1], info[2], info[3]);
 }
 #endif
+
+#include <stdint.h>
+typedef uint32_t u32;
+typedef uint64_t u64;
+typedef uint8_t u8;
 
 #endif
