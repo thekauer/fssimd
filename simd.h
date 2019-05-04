@@ -17,7 +17,8 @@ public:
 
 
 #include <emmintrin.h>
-class SSE2 : ISimd<__m128i,u32> {
+class SSE2 : public ISimd<__m128i,u32> {
+public:
     INLINE msk load(const msk* addr) override {
         return _mm_loadu_si128(addr);
     }
@@ -34,7 +35,8 @@ class SSE2 : ISimd<__m128i,u32> {
 };
 
 #include <immintrin.h>
-class AVX : ISimd<__m256i,u32> {
+class AVX : public ISimd<__m256i,u32> {
+public:
     INLINE msk load(const msk* addr) override {
         return _mm256_loadu_si256(addr);
     }
@@ -49,8 +51,11 @@ class AVX : ISimd<__m256i,u32> {
     }
 };
 
+
+#ifdef __ARM_NEON__
 #include <arm_neon.h>
-class Neon : ISimd<uint8x16_t,u32> {
+class Neon : public ISimd<uint8x16_t,u32> {
+public:
     INLINE msk load(const msk* addr) override {
         return vld1q_u8(addr);
 
@@ -71,6 +76,23 @@ class Neon : ISimd<uint8x16_t,u32> {
         return vdupq_n_u8(c);
     }
 };
+#endif //__ARM_NEON__
+
+
+template<typename S,typename T,size_t SZ = sizeof(S::msk),typename R = typename S::reg,typename It = typename T::iterator,typename V=typename T::value_type>
+V match(V val,It beg,It end) {
+    S s;
+    auto len = std::distance(beg,end);
+    R r;
+    ptr i=0;
+    do {
+        r = s.movemask(s.cmpeq(s.set(val),s.load( (typename S::msk*)&beg[0])));
+        len-=SZ;
+        i++;
+    }while(len>SZ);
+    return ((V*)&beg[0])[r+i*SZ];
+}
+
 
 
 #endif
