@@ -78,7 +78,7 @@ public:
 };
 #endif //__ARM_NEON__
 
-
+//lzcnt!!! 
 template<typename S,typename T,size_t SZ = sizeof(S::msk),typename R = typename S::reg,typename It = typename T::iterator,typename V=typename T::value_type>
 V match(V val,It beg,It end) {
     S s;
