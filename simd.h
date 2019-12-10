@@ -78,7 +78,7 @@ public:
 };
 #endif //__ARM_NEON__
 
-//lzcnt!!! 
+/*
 template<typename S,typename T,size_t SZ = sizeof(S::msk),typename R = typename S::reg,typename It = typename T::iterator,typename V=typename T::value_type>
 V match(V val,It beg,It end) {
     S s;
@@ -92,13 +92,12 @@ V match(V val,It beg,It end) {
     }while(len>SZ);
     return ((V*)&beg[0])[r+i*SZ];
 }
-
-/*
-template<typename S,typename T>
-T match(T* arr) {
-    return sizeof(S::reg)-clz(s.movemask(s.cmpeq(s.set(val),s.load( (typename S::msk*)arr))));
-}
 */
 
+template<typename S,typename T>
+T match(T* arr,T val) {
+    S s;
+    return s.movemask(s.cmpeq(s.set(val),s.load( (typename S::msk*)arr)))-1;
+}
 
 #endif
