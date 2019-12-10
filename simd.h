@@ -93,6 +93,11 @@ V match(V val,It beg,It end) {
     return ((V*)&beg[0])[r+i*SZ];
 }
 
+/*
+template<typename S,typename T>
+T match(T* arr) {
+    return sizeof(S::reg)-clz(s.movemask(s.cmpeq(s.set(val),s.load( (typename S::msk*)arr))));
+}
 
 
 #endif
